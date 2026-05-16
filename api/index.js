@@ -17,6 +17,7 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET;
 const ADMIN_JWT_EXPIRES_IN = process.env.ADMIN_JWT_EXPIRES_IN || '2h';
+const ORDER_STATUSES = ['pending', 'payment_confirmed', 'preparing', 'out_for_delivery', 'completed', 'cancelled'];
 
 // Disable buffering so mongoose throws immediately if not connected
 mongoose.set('bufferCommands', false);
@@ -80,7 +81,7 @@ const orderSchema = new mongoose.Schema({
   pincode: { type: String, required: true },
   items: { type: [orderItemSchema], required: true },
   total: { type: Number, required: true },
-  status: { type: String, enum: ['pending', 'confirmed', 'preparing', 'delivered', 'cancelled'], default: 'pending' },
+  status: { type: String, enum: ORDER_STATUSES, default: 'pending' },
   payment_status: { type: String, enum: ['unpaid', 'paid'], default: 'unpaid' },
   notes: { type: String, default: '' },
   confirmed_at: { type: Date, default: null },
@@ -384,7 +385,7 @@ app.post('/api/orders', async (req, res) => {
 });
 
 // Get all orders (admin)
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', adminAuth, async (req, res) => {
   try {
     const { status } = req.query;
     const filter = {};
@@ -402,7 +403,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 // Get single order
-app.get('/api/orders/:orderId', async (req, res) => {
+app.get('/api/orders/:orderId', adminAuth, async (req, res) => {
   try {
     const order = await Order.findOne({ order_id: req.params.orderId }).lean();
     if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
@@ -420,7 +421,7 @@ app.patch('/api/orders/:orderId/confirm-payment', adminAuth, async (req, res) =>
       { order_id: req.params.orderId },
       {
         payment_status: 'paid',
-        status: 'confirmed',
+        status: 'payment_confirmed',
         confirmed_at: new Date(),
         notes: notes || 'Payment confirmed via WhatsApp',
       },
@@ -437,6 +438,11 @@ app.patch('/api/orders/:orderId/confirm-payment', adminAuth, async (req, res) =>
 app.patch('/api/orders/:orderId/status', adminAuth, async (req, res) => {
   try {
     const { status } = req.body;
+
+    if (!ORDER_STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid order status' });
+    }
+
     const order = await Order.findOneAndUpdate(
       { order_id: req.params.orderId },
       { status },
@@ -450,7 +456,7 @@ app.patch('/api/orders/:orderId/status', adminAuth, async (req, res) => {
 });
 
 // Stats for admin dashboard
-app.get('/api/stats', async (req, res) => {
+app.get('/api/stats', adminAuth, async (req, res) => {
   try {
     const [totalOrders, pendingOrders, paidOrders, revenueResult] = await Promise.all([
       Order.countDocuments(),
