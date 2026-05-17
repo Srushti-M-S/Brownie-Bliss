@@ -58,15 +58,34 @@ function updateCartBadge() {
 }
 
 function updateCartUI() {
+ 
   const body = document.getElementById('cartBody');
   const foot = document.getElementById('cartFoot');
   const totalDisp = document.getElementById('cartTotalDisp');
   if (!body) return;
 
   if (cart.length === 0) {
-    body.innerHTML = `<div class="cart-empty-state"><div style="font-size:48px">🍫</div><p>Your cart is empty!</p></div>`;
-    if (foot) foot.style.display = 'none';
-  } else {
+  body.innerHTML = `
+    <div class="cart-empty-state">
+      <div class="empty-cart-icon">🍫</div>
+
+      <h2>Your cart is empty</h2>
+
+      <p>
+        Looks like you haven't added any brownies yet.
+      </p>
+
+      <a href="products.html" class="shop-now-btn">
+        Shop Now
+      </a>
+    </div>
+  `;
+
+  if (foot) foot.style.display = 'none';
+
+  return;
+}
+ else {
     body.innerHTML = cart.map(item => `
       <div class="cart-item">
         <div class="ci-emoji">${item.emoji}</div>
@@ -306,3 +325,4 @@ function showToast(msg) {
 
 // Init
 updateCartBadge();
+updateCartUI();
