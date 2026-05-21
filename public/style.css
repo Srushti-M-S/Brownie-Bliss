@@ -3165,13 +3165,17 @@ nav a:hover {
 .product-img-wrap {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4/3;
 }
 
 .product-img-wrap img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 220px;
+  height: 100%;
   object-fit: cover;
-  display: block;
   transition: transform 0.4s;
 }
 
@@ -5523,13 +5527,17 @@ nav a:hover {
 .product-img-wrap {
   position: relative;
   overflow: hidden;
+  width: 100%;
+  aspect-ratio: 4/3;
 }
 
 .product-img-wrap img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 220px;
+  height: 100%;
   object-fit: cover;
-  display: block;
   transition: transform 0.4s;
 }
 
