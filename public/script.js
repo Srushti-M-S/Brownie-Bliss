@@ -43,7 +43,32 @@ const FAVOURITES_KEY = 'brownie_bliss_favourites';
 
 let favourites = loadFavourites();
 
-// FIXED LOAD PRODUCTS
+function buildCatalogFromList(list) {
+    if (list && Array.isArray(list) && list.length) {
+        products = list.filter(p => p.type === 'standard').map(p => ({
+            id: p.id_ref,
+            name: p.name,
+            category: p.category,
+            price: p.price,
+            emoji: p.emoji,
+            img: p.img,
+            description: p.description || ''
+        }));
+
+        bdayCakes = {};
+        const bd = list.filter(p => p.type === 'birthday');
+        bd.forEach(p => {
+            bdayCakes[p.id_ref] = {
+                price: p.price,
+                emoji: p.emoji,
+                img: p.img
+            };
+        });
+    } else {
+        useFallbackProducts();
+    }
+}
+
 async function loadProducts() {
     try {
         const res = await fetch(`${API_BASE}/products`);
@@ -68,51 +93,8 @@ async function loadProducts() {
         console.error(e);
         useFallbackProducts();
     }
-
-    if (document.getElementById('productsGrid')) filterProducts('all');
-    if (document.getElementById('cakePrice')) calculateBdayPrice();
-}
-
-function useFallbackProducts() {
-    products = DEFAULT_PRODUCTS;
-    bdayCakes = DEFAULT_BDAY_CAKES;
-}
-
-// --- FAVOURITES ---
-function loadFavourites() {
-    try {
-        return JSON.parse(localStorage.getItem(FAVOURITES_KEY)) || { bakeries: [], dishes: [] };
-    } catch {
-        return { bakeries: [], dishes: [] };
-        if (data.success && Array.isArray(data.products) && data.products.length) {
-        
-          products = data.products.filter(p => p.type === 'standard').map(p => ({
-            id: p.id_ref,
-            name: p.name,
-            category: p.category,
-            price: p.price,
-            emoji: p.emoji,
-            img: p.img,
-            description: p.description || ''
-        }));
-
-            const bd = data.products.filter(p => p.type === 'birthday');
-
-            bd.forEach(p => {
-                bdayCakes[p.id_ref] = {
-                    price: p.price,
-                    emoji: p.emoji,
-                    img: p.img
-                };
-            });
-
-        } else {
-            useFallbackProducts();
-        }
-
-    } catch (e) {
-        console.error('Error loading products from database:', e);
-        useFallbackProducts();
+    if (document.getElementById('cakePrice')) {
+        calculateBdayPrice();
     }
 
 function saveFavourites() {
@@ -561,11 +543,8 @@ function sendWhatsAppFinal(orderId, itemsSnap, orderTotal) {
     const total = typeof orderTotal === 'number' && Number.isFinite(orderTotal)
         ? orderTotal
         : lines.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
-
     const itemLines = lines.map(i => {
-
         let line = `• ${i.name} × ${i.qty} = ₹${(Number(i.price) * Number(i.qty)).toLocaleString('en-IN')}`;
-
         if (i.customizations) {
             const c = i.customizations;
             const details = [];
